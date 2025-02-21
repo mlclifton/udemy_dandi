@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 
 interface ApiKey {
   id: string;
@@ -125,6 +127,7 @@ export default function ApiKeysPage() {
   const handleCopyKey = async (key: string) => {
     await navigator.clipboard.writeText(key);
     setCopiedKey(key);
+    toast.success('API key copied to clipboard');
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
@@ -158,6 +161,7 @@ export default function ApiKeysPage() {
         ? { ...key, key: newKeyValue } 
         : key
     ));
+    toast.success('API key regenerated successfully');
   };
 
   const formatDate = (dateString: string) => {
@@ -171,6 +175,7 @@ export default function ApiKeysPage() {
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-6xl mx-auto">
+        <div><Toaster/></div>
         <h1 className="text-2xl font-bold mb-8">Overview</h1>
         
         <div className="mb-8 p-6 rounded-xl bg-gradient-to-r from-purple-500 to-orange-500 text-white">
