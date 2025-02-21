@@ -104,6 +104,7 @@ export default function ApiKeysPage() {
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
 
   const handleCreateKey = async (name: string, usage: number) => {
     const newKey = {
@@ -169,6 +170,18 @@ export default function ApiKeysPage() {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
+    });
+  };
+
+  const toggleKeyVisibility = (keyId: string) => {
+    setVisibleKeys(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(keyId)) {
+        newSet.delete(keyId);
+      } else {
+        newSet.add(keyId);
+      }
+      return newSet;
     });
   };
 
@@ -245,11 +258,20 @@ export default function ApiKeysPage() {
                     <td className="py-4 px-6">{key.name}</td>
                     <td className="py-4 px-6">{key.usage || 0}</td>
                     <td className="py-4 px-6 font-mono">
-                      {key.key.slice(0, 8)}...{key.key.slice(-4)}
+                      {visibleKeys.has(key.id) 
+                        ? key.key
+                        : `${key.key.slice(0, 4)}${'*'.repeat(key.key.length - 4)}`}
                     </td>
                     <td className="py-4 px-6">{formatDate(key.createdAt)}</td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => toggleKeyVisibility(key.id)}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                          title={visibleKeys.has(key.id) ? "Hide key" : "Show key"}
+                        >
+                          {visibleKeys.has(key.id) ? "👁️" : "👁️‍🗨️"}
+                        </button>
                         <button
                           onClick={() => handleRegenerateKey(key.id)}
                           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
