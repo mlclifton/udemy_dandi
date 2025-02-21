@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 interface ApiKey {
@@ -9,32 +9,117 @@ interface ApiKey {
   key: string;
   createdAt: string;
   lastUsed: string;
+  usage: number;
+  limit: number;
+}
+
+interface KeyModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (name: string, usage: number) => void;
+  initialName?: string;
+  initialUsage?: number;
+  mode: 'create' | 'edit';
+}
+
+function KeyModal({ isOpen, onClose, onSubmit, initialName = '', initialUsage = 1000, mode }: KeyModalProps) {
+  const [name, setName] = useState(initialName);
+  const [usage, setUsage] = useState(initialUsage);
+
+  useEffect(() => {
+    setName(initialName);
+    setUsage(initialUsage);
+  }, [initialName, initialUsage]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4">
+          {mode === 'create' ? 'Create a new API key' : 'Edit API key'}
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Enter a name and usage for the {mode === 'create' ? 'new' : ''} API key.
+        </p>
+        
+        <div className="mb-4">
+          <label className="block mb-2">
+            Key Name — A unique name to identify this key
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-transparent"
+            placeholder="Key Name"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block mb-2">
+            Usage*
+          </label>
+          <input
+            type="number"
+            value={usage}
+            onChange={(e) => setUsage(Number(e.target.value))}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-transparent"
+          />
+          <p className="text-sm text-gray-500 mt-2">
+            * If the combined usage of all your keys exceeds your plan's limit, all requests will be rejected.
+          </p>
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onSubmit(name, usage);
+              setName('');
+              setUsage(1000);
+              onClose();
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          >
+            {mode === 'create' ? 'Create' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function ApiKeysPage() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
-  const [newKeyName, setNewKeyName] = useState('');
-  const [showNewKey, setShowNewKey] = useState<ApiKey | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const handleCreateKey = async () => {
-    if (!newKeyName.trim()) {
-      alert('Please enter a key name');
-      return;
-    }
-
+  const handleCreateKey = async (name: string, usage: number) => {
     const newKey = {
       id: Math.random().toString(36).substr(2, 9),
-      name: newKeyName,
+      name,
       key: `dk_${Math.random().toString(36).substr(2, 24)}`,
       createdAt: new Date().toISOString(),
-      lastUsed: '-'
+      lastUsed: '-',
+      usage,
+      limit: 1000
     };
     setApiKeys([...apiKeys, newKey]);
-    setNewKeyName('');
-    setIsCreating(false);
-    setShowNewKey(newKey); // Show the full key after creation
+  };
+
+  const handleEditKey = async (id: string, name: string, usage: number) => {
+    setApiKeys(apiKeys.map(key => 
+      key.id === id ? { ...key, name, usage } : key
+    ));
   };
 
   const handleCopyKey = async (key: string) => {
@@ -48,84 +133,102 @@ export default function ApiKeysPage() {
     setApiKeys(apiKeys.filter(key => key.id !== id));
   };
 
+  const handleStartEdit = (key: ApiKey) => {
+    setEditingKeyId(key.id);
+    setEditingName(key.name);
+  };
+
+  const handleSaveEdit = (id: string) => {
+    setApiKeys(apiKeys.map(key => 
+      key.id === id ? { ...key, name: editingName } : key
+    ));
+    setEditingKeyId(null);
+    setEditingName('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingKeyId(null);
+    setEditingName('');
+  };
+
+  const handleRegenerateKey = async (keyId: string) => {
+    const newKeyValue = `dk_${Math.random().toString(36).substr(2, 24)}`;
+    setApiKeys(apiKeys.map(key => 
+      key.id === keyId 
+        ? { ...key, key: newKeyValue } 
+        : key
+    ));
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">API Keys</h1>
+        <h1 className="text-2xl font-bold mb-8">Overview</h1>
+        
+        <div className="mb-8 p-6 rounded-xl bg-gradient-to-r from-purple-500 to-orange-500 text-white">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm">CURRENT PLAN</span>
+            <button className="bg-white/20 px-3 py-1 rounded-full text-sm hover:bg-white/30">
+              Manage Plan
+            </button>
+          </div>
+          <h2 className="text-2xl font-bold mb-4">Researcher</h2>
+          <div>
+            <div className="text-sm mb-2">API Limit</div>
+            <div>24 / 1,000 Requests</div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">API Keys</h2>
           <button
-            onClick={() => setIsCreating(true)}
-            className="rounded-full bg-foreground text-background px-4 py-2 hover:bg-[#383838] dark:hover:bg-[#ccc] transition-colors"
+            onClick={() => {
+              setModalMode('create');
+              setIsModalOpen(true);
+            }}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
           >
-            Create New API Key
+            <span>+</span> Create New Key
           </button>
         </div>
 
-        {showNewKey && (
-          <div className="mb-8 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold text-green-700 dark:text-green-300">
-                API Key Created Successfully
-              </h2>
-              <button
-                onClick={() => setShowNewKey(null)}
-                className="text-green-700 dark:text-green-300 hover:text-green-900"
-              >
-                ×
-              </button>
-            </div>
-            <p className="text-sm text-green-600 dark:text-green-400 mb-2">
-              Make sure to copy your API key now. You won't be able to see it again!
-            </p>
-            <div className="flex items-center gap-2 font-mono bg-white dark:bg-black/20 p-2 rounded">
-              <code className="flex-1">{showNewKey.key}</code>
-              <button
-                onClick={() => handleCopyKey(showNewKey.key)}
-                className="px-3 py-1 text-sm bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-800"
-              >
-                {copiedKey === showNewKey.key ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {isCreating && (
-          <div className="mb-8 p-4 border border-black/[.08] dark:border-white/[.145] rounded-lg">
-            <h2 className="text-lg font-semibold mb-4">Create New API Key</h2>
-            <div className="flex gap-4">
-              <input
-                type="text"
-                placeholder="Key name"
-                value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
-                className="flex-1 px-3 py-2 border border-black/[.08] dark:border-white/[.145] rounded-md bg-transparent"
-              />
-              <button
-                onClick={handleCreateKey}
-                className="px-4 py-2 bg-foreground text-background rounded-md hover:bg-[#383838] dark:hover:bg-[#ccc] transition-colors"
-              >
-                Create
-              </button>
-              <button
-                onClick={() => setIsCreating(false)}
-                className="px-4 py-2 border border-black/[.08] dark:border-white/[.145] rounded-md hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
+        <KeyModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingKeyId(null);
+            setEditingName('');
+          }}
+          onSubmit={(name, usage) => {
+            if (modalMode === 'create') {
+              handleCreateKey(name, usage);
+            } else {
+              handleEditKey(editingKeyId!, name, usage);
+            }
+          }}
+          initialName={modalMode === 'edit' ? apiKeys.find(k => k.id === editingKeyId)?.name || '' : ''}
+          initialUsage={modalMode === 'edit' ? apiKeys.find(k => k.id === editingKeyId)?.usage || 1000 : 1000}
+          mode={modalMode}
+        />
 
         {apiKeys.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-black/[.08] dark:border-white/[.145]">
-                  <th className="text-left py-4 px-6">Name</th>
-                  <th className="text-left py-4 px-6">API Key</th>
-                  <th className="text-left py-4 px-6">Created</th>
-                  <th className="text-left py-4 px-6">Last Used</th>
-                  <th className="text-right py-4 px-6">Actions</th>
+                  <th className="text-left py-4 px-6">NAME</th>
+                  <th className="text-left py-4 px-6">USAGE</th>
+                  <th className="text-left py-4 px-6">KEY</th>
+                  <th className="text-left py-4 px-6">CREATED ON</th>
+                  <th className="text-right py-4 px-6">OPTIONS</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,32 +238,48 @@ export default function ApiKeysPage() {
                     className="border-b border-black/[.08] dark:border-white/[.145]"
                   >
                     <td className="py-4 px-6">{key.name}</td>
+                    <td className="py-4 px-6">{key.usage || 0}</td>
                     <td className="py-4 px-6 font-mono">
-                      <div className="flex items-center gap-2">
-                        <span>{key.key.slice(0, 8)}...{key.key.slice(-4)}</span>
+                      {key.key.slice(0, 8)}...{key.key.slice(-4)}
+                    </td>
+                    <td className="py-4 px-6">{formatDate(key.createdAt)}</td>
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleRegenerateKey(key.id)}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                          title="Regenerate key"
+                        >
+                          🔄
+                        </button>
                         <button
                           onClick={() => handleCopyKey(key.key)}
-                          className="text-gray-500 hover:text-gray-700"
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                          title="Copy key"
                         >
-                          {copiedKey === key.key ? (
-                            <span className="text-green-600">Copied!</span>
-                          ) : (
-                            <span>Copy</span>
-                          )}
+                          📋
+                        </button>
+                        <button
+                          onClick={() => {
+                            const keyToEdit = apiKeys.find(k => k.id === key.id);
+                            setModalMode('edit');
+                            setEditingKeyId(key.id);
+                            setEditingName(keyToEdit?.name || '');
+                            setIsModalOpen(true);
+                          }}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                          title="Edit key"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDeleteKey(key.id)}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-red-500"
+                          title="Delete key"
+                        >
+                          🗑️
                         </button>
                       </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      {new Date(key.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="py-4 px-6">{key.lastUsed}</td>
-                    <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={() => handleDeleteKey(key.id)}
-                        className="text-red-500 hover:text-red-700 transition-colors"
-                      >
-                        Delete
-                      </button>
                     </td>
                   </tr>
                 ))}
