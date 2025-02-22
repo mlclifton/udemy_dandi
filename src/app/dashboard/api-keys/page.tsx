@@ -106,23 +106,53 @@ export default function ApiKeysPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
 
-  const handleCreateKey = async (name: string, usage: number) => {
-    const newKey = {
-      id: Math.random().toString(36).substr(2, 9),
-      name,
-      key: `dk_${Math.random().toString(36).substr(2, 24)}`,
-      createdAt: new Date().toISOString(),
-      lastUsed: '-',
-      usage,
-      limit: 1000
+  useEffect(() => {
+    const loadApiKeys = async () => {
+      try {
+        const response = await fetch('/api/keys');
+        const keys = await response.json();
+        setApiKeys(keys);
+      } catch (error) {
+        toast.error('Failed to load API keys');
+      }
     };
-    setApiKeys([...apiKeys, newKey]);
+    loadApiKeys();
+  }, []);
+
+  const handleCreateKey = async (name: string, usage: number) => {
+    try {
+      const response = await fetch('/api/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, usage }),
+      });
+      const newKey = await response.json();
+      if (!response.ok) throw new Error(newKey.error);
+      
+      setApiKeys([...apiKeys, newKey]);
+      toast.success('API key created successfully');
+    } catch (error) {
+      toast.error('Failed to create API key');
+    }
   };
 
   const handleEditKey = async (id: string, name: string, usage: number) => {
-    setApiKeys(apiKeys.map(key => 
-      key.id === id ? { ...key, name, usage } : key
-    ));
+    try {
+      const response = await fetch(`/api/keys/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, usage }),
+      });
+      const updatedKey = await response.json();
+      if (!response.ok) throw new Error(updatedKey.error);
+
+      setApiKeys(apiKeys.map(key => 
+        key.id === id ? updatedKey : key
+      ));
+      toast.success('API key updated successfully');
+    } catch (error) {
+      toast.error('Failed to update API key');
+    }
   };
 
   const handleCopyKey = async (key: string) => {
@@ -133,8 +163,17 @@ export default function ApiKeysPage() {
   };
 
   const handleDeleteKey = async (id: string) => {
-    // TODO: Implement API key deletion
-    setApiKeys(apiKeys.filter(key => key.id !== id));
+    try {
+      const response = await fetch(`/api/keys/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete');
+
+      setApiKeys(apiKeys.filter(key => key.id !== id));
+      toast.success('API key deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete API key');
+    }
   };
 
   const handleStartEdit = (key: ApiKey) => {
@@ -156,13 +195,20 @@ export default function ApiKeysPage() {
   };
 
   const handleRegenerateKey = async (keyId: string) => {
-    const newKeyValue = `dk_${Math.random().toString(36).substr(2, 24)}`;
-    setApiKeys(apiKeys.map(key => 
-      key.id === keyId 
-        ? { ...key, key: newKeyValue } 
-        : key
-    ));
-    toast.success('API key regenerated successfully');
+    try {
+      const response = await fetch(`/api/keys/${keyId}/regenerate`, {
+        method: 'POST',
+      });
+      const updatedKey = await response.json();
+      if (!response.ok) throw new Error(updatedKey.error);
+
+      setApiKeys(apiKeys.map(key => 
+        key.id === keyId ? updatedKey : key
+      ));
+      toast.success('API key regenerated successfully');
+    } catch (error) {
+      toast.error('Failed to regenerate API key');
+    }
   };
 
   const formatDate = (dateString: string) => {
