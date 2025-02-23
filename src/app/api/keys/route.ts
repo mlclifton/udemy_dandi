@@ -30,37 +30,4 @@ export async function POST(request: Request) {
     console.error('Error creating API key:', error);
     return NextResponse.json({ error: 'Failed to create API key' }, { status: 500 });
   }
-}
-
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { name, usage } = await request.json();
-    const db = await getDb();
-    
-    await db.run(
-      'UPDATE api_keys SET name = ?, usage = ? WHERE id = ?',
-      [name, usage, params.id]
-    );
-    
-    const updatedKey = await db.get('SELECT * FROM api_keys WHERE id = ?', params.id);
-    return NextResponse.json(updatedKey);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update API key' }, { status: 500 });
-  }
-}
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const db = await getDb();
-    await db.run('DELETE FROM api_keys WHERE id = ?', params.id);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete API key' }, { status: 500 });
-  }
 } 
