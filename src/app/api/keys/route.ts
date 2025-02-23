@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { ApiKey } from '@/types/api-keys';
 
 export async function GET() {
   try {
@@ -13,22 +14,28 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { name, usage } = await request.json();
-    const db = await getDb();
-    
-    const id = Math.random().toString(36).substr(2, 9);
-    const key = `dk_${Math.random().toString(36).substr(2, 24)}`;
-    const now = new Date().toISOString();
-    
-    await db.run(
-      'INSERT INTO api_keys (id, name, key, created_at, last_used, usage, usage_limit) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, name, key, now, now, usage, 1000]
-    );
-    
-    const newKey = await db.get('SELECT * FROM api_keys WHERE id = ?', id);
+    const body = await request.json();
+    const { name, usage } = body;
+
+    if (!name || typeof usage !== 'number') {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
+
+    const newKey = await createApiKey(name, usage);
     return NextResponse.json(newKey);
   } catch (error) {
-    console.error('Error creating API key:', error);
-    return NextResponse.json({ error: 'Failed to create API key' }, { status: 500 });
+    if (error instanceof DatabaseError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 } 

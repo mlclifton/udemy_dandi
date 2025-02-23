@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
+import { ApiKey } from '@/types/api-keys';
 
 let db: Database | null = null;
 
@@ -25,18 +26,29 @@ export async function getDb() {
   return db;
 }
 
-export async function createApiKey(name: string, usage: number) {
-  const db = await getDb();
-  const id = Math.random().toString(36).substr(2, 9);
-  const key = `dk_${Math.random().toString(36).substr(2, 24)}`;
-  const now = new Date().toISOString();
-  
-  await db.run(
-    'INSERT INTO api_keys (id, name, key, created_at, last_used, usage, usage_limit) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [id, name, key, now, now, usage, 1000]
-  );
-  
-  return { id, name, key, createdAt: now, lastUsed: now, usage, usage_limit: 1000 };
+export class DatabaseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DatabaseError';
+  }
+}
+
+export async function createApiKey(name: string, usage: number): Promise<ApiKey> {
+  try {
+    const db = await getDb();
+    const id = Math.random().toString(36).substr(2, 9);
+    const key = `dk_${Math.random().toString(36).substr(2, 24)}`;
+    const now = new Date().toISOString();
+    
+    await db.run(
+      'INSERT INTO api_keys (id, name, key, created_at, last_used, usage, usage_limit) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [id, name, key, now, now, usage, 1000]
+    );
+    
+    return { id, name, key, createdAt: now, lastUsed: now, usage, usage_limit: 1000 };
+  } catch (error) {
+    throw new DatabaseError(`Failed to create API key: ${error.message}`);
+  }
 }
 
 export async function getAllApiKeys() {
