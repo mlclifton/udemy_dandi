@@ -1,11 +1,12 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 interface SidebarItem {
-  icon: JSX.Element;
+  icon: React.ReactElement;
   label: string;
   href: string;
 }
