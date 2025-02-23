@@ -29,13 +29,14 @@ export async function createApiKey(name: string, usage: number) {
   const db = await getDb();
   const id = Math.random().toString(36).substr(2, 9);
   const key = `dk_${Math.random().toString(36).substr(2, 24)}`;
+  const now = new Date().toISOString();
   
   await db.run(
     'INSERT INTO api_keys (id, name, key, created_at, last_used, usage, usage_limit) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [id, name, key, new Date().toISOString(), '-', usage, 1000]
+    [id, name, key, now, now, usage, 1000]
   );
   
-  return { id, name, key, createdAt: new Date().toISOString(), lastUsed: '-', usage, usage_limit: 1000 };
+  return { id, name, key, createdAt: now, lastUsed: now, usage, usage_limit: 1000 };
 }
 
 export async function getAllApiKeys() {

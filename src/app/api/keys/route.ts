@@ -18,10 +18,11 @@ export async function POST(request: Request) {
     
     const id = Math.random().toString(36).substr(2, 9);
     const key = `dk_${Math.random().toString(36).substr(2, 24)}`;
+    const now = new Date().toISOString();
     
     await db.run(
       'INSERT INTO api_keys (id, name, key, created_at, last_used, usage, usage_limit) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [id, name, key, new Date().toISOString(), '-', usage, 1000]
+      [id, name, key, now, now, usage, 1000]
     );
     
     const newKey = await db.get('SELECT * FROM api_keys WHERE id = ?', id);

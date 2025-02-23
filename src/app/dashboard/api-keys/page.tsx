@@ -9,10 +9,10 @@ interface ApiKey {
   id: string;
   name: string;
   key: string;
-  createdAt: string;
-  lastUsed: string;
+  created_at: string;
+  last_used: string;
   usage: number;
-  limit: number;
+  usage_limit: number;
 }
 
 interface KeyModalProps {
@@ -212,11 +212,18 @@ export default function ApiKeysPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    if (!dateString || dateString === '-') return '-';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
   };
 
   const toggleKeyVisibility = (keyId: string) => {
@@ -308,7 +315,7 @@ export default function ApiKeysPage() {
                         ? key.key
                         : `${key.key.slice(0, 4)}${'*'.repeat(key.key.length - 4)}`}
                     </td>
-                    <td className="py-4 px-6">{formatDate(key.createdAt)}</td>
+                    <td className="py-4 px-6">{formatDate(key.created_at)}</td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex justify-end gap-2">
                         <button
