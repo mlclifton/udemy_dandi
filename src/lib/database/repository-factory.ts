@@ -7,9 +7,10 @@ export function getRepository(): DatabaseRepository {
   const dbType = process.env.DATABASE_TYPE || 'sqlite';
   
   switch (dbType) {
+    case 'sqlite':
+      return new SQLiteRepository();
     case 'supabase':
       return new SupabaseRepository();
-    case 'sqlite':
     default:
       return new SQLiteRepository();
   }
