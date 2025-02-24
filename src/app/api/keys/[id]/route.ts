@@ -1,39 +1,44 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
-
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  const { id } = await Promise.resolve(params);
-  
-  try {
-    const { name, usage } = await request.json();
-    const db = await getDb();
-    
-    await db.run(
-      'UPDATE api_keys SET name = ?, usage = ? WHERE id = ?',
-      [name, usage, id]
-    );
-    
-    const updatedKey = await db.get('SELECT * FROM api_keys WHERE id = ?', id);
-    return NextResponse.json(updatedKey);
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update API key' }, { status: 500 });
-  }
-}
+import { getRepository } from '@/lib/database/repository-factory';
 
 export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { id } = await Promise.resolve(params);
+  const { id } = params;
   
   try {
-    const db = await getDb();
-    await db.run('DELETE FROM api_keys WHERE id = ?', id);
+    const repository = getRepository();
+    await repository.deleteApiKey(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete API key' }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params;
+    const { name, usage } = await request.json();
+
+    if (!name || typeof usage !== 'number') {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
+
+    const repository = getRepository();
+    await repository.updateApiKey(id, name, usage);
+    const updatedKey = await repository.getApiKeyById(id);
+    return NextResponse.json(updatedKey);
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to update API key' },
+      { status: 500 }
+    );
   }
 } 
