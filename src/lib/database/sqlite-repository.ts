@@ -73,4 +73,9 @@ export class SQLiteRepository implements DatabaseRepository {
     const db = await this.getDb();
     return db.get('SELECT * FROM api_keys WHERE id = ?', [id]);
   }
+
+  async getApiKeyByKey(key: string): Promise<ApiKey | null> {
+    const db = await this.getDb();
+    return db.get('SELECT * FROM api_keys WHERE key = ?', [key]);
+  }
 } 

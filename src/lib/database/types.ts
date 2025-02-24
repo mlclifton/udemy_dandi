@@ -15,4 +15,5 @@ export interface DatabaseRepository {
   deleteApiKey(id: string): Promise<void>;
   regenerateApiKey(id: string): Promise<string>;
   getApiKeyById(id: string): Promise<ApiKey | null>;
+  getApiKeyByKey(key: string): Promise<ApiKey | null>;
 } 

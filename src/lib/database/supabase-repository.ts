@@ -83,4 +83,15 @@ export class SupabaseRepository implements DatabaseRepository {
     if (error) throw error;
     return data as ApiKey;
   }
+
+  async getApiKeyByKey(key: string): Promise<ApiKey | null> {
+    const { data, error } = await this.client
+      .from('api_keys')
+      .select('*')
+      .eq('key', key)
+      .single();
+
+    if (error) throw error;
+    return data as ApiKey | null;
+  }
 } 
