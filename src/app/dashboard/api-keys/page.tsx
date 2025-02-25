@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
+
+interface ApiError {
+  message: string;
+}
 
 interface ApiKey {
   id: string;
@@ -13,6 +16,10 @@ interface ApiKey {
   last_used: string;
   usage: number;
   usage_limit: number;
+}
+
+interface ApiKeyResponse {
+  error?: string;
 }
 
 interface KeyModalProps {
@@ -69,7 +76,7 @@ function KeyModal({ isOpen, onClose, onSubmit, initialName = '', initialUsage = 
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-transparent"
           />
           <p className="text-sm text-gray-500 mt-2">
-            * If the combined usage of all your keys exceeds your plan's limit, all requests will be rejected.
+            * If the combined usage of all your keys exceeds your plan&apos;s limit, all requests will be rejected.
           </p>
         </div>
 
@@ -103,7 +110,6 @@ export default function ApiKeysPage() {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -112,8 +118,9 @@ export default function ApiKeysPage() {
         const response = await fetch('/api/keys');
         const keys = await response.json();
         setApiKeys(keys);
-      } catch (error) {
-        toast.error('Failed to load API keys');
+      } catch (error: unknown) {
+        const err = error as Error;
+        toast.error(`Failed to load API keys: ${err.message || 'Unknown error'}`);
       }
     };
     loadApiKeys();
@@ -126,13 +133,14 @@ export default function ApiKeysPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, usage }),
       });
-      const newKey = await response.json();
+      const newKey = await response.json() as ApiKeyResponse;
       if (!response.ok) throw new Error(newKey.error);
       
-      setApiKeys([...apiKeys, newKey]);
+      setApiKeys([...apiKeys, newKey as unknown as ApiKey]);
       toast.success('API key created successfully');
-    } catch (error) {
-      toast.error('Failed to create API key');
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error(`Failed to create API key: ${err.message || 'Unknown error'}`);
     }
   };
 
@@ -143,23 +151,27 @@ export default function ApiKeysPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, usage }),
       });
-      const updatedKey = await response.json();
+      const updatedKey = await response.json() as ApiKeyResponse;
       if (!response.ok) throw new Error(updatedKey.error);
 
       setApiKeys(apiKeys.map(key => 
-        key.id === id ? updatedKey : key
+        key.id === id ? updatedKey as unknown as ApiKey : key
       ));
       toast.success('API key updated successfully');
-    } catch (error) {
-      toast.error('Failed to update API key');
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error(`Failed to update API key: ${err.message || 'Unknown error'}`);
     }
   };
 
   const handleCopyKey = async (key: string) => {
-    await navigator.clipboard.writeText(key);
-    setCopiedKey(key);
-    toast.success('API key copied to clipboard');
-    setTimeout(() => setCopiedKey(null), 2000);
+    try {
+      await navigator.clipboard.writeText(key);
+      toast.success('API key copied to clipboard');
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error(`Failed to copy API key: ${err.message || 'Unknown error'}`);
+    }
   };
 
   const handleDeleteKey = async (id: string) => {
@@ -171,27 +183,10 @@ export default function ApiKeysPage() {
 
       setApiKeys(apiKeys.filter(key => key.id !== id));
       toast.success('API key deleted successfully');
-    } catch (error) {
-      toast.error('Failed to delete API key');
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error(`Failed to delete API key: ${err.message || 'Unknown error'}`);
     }
-  };
-
-  const handleStartEdit = (key: ApiKey) => {
-    setEditingKeyId(key.id);
-    setEditingName(key.name);
-  };
-
-  const handleSaveEdit = (id: string) => {
-    setApiKeys(apiKeys.map(key => 
-      key.id === id ? { ...key, name: editingName } : key
-    ));
-    setEditingKeyId(null);
-    setEditingName('');
-  };
-
-  const handleCancelEdit = () => {
-    setEditingKeyId(null);
-    setEditingName('');
   };
 
   const handleRegenerateKey = async (keyId: string) => {
@@ -199,15 +194,16 @@ export default function ApiKeysPage() {
       const response = await fetch(`/api/keys/${keyId}/regenerate`, {
         method: 'POST',
       });
-      const updatedKey = await response.json();
+      const updatedKey = await response.json() as ApiKeyResponse;
       if (!response.ok) throw new Error(updatedKey.error);
 
       setApiKeys(apiKeys.map(key => 
-        key.id === keyId ? updatedKey : key
+        key.id === keyId ? updatedKey as unknown as ApiKey : key
       ));
       toast.success('API key regenerated successfully');
-    } catch (error) {
-      toast.error('Failed to regenerate API key');
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast.error(`Failed to regenerate API key: ${err.message || 'Unknown error'}`);
     }
   };
 
@@ -221,7 +217,7 @@ export default function ApiKeysPage() {
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch (error) {
+    } catch {
       return 'Invalid Date';
     }
   };

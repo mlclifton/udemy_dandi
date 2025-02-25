@@ -1,18 +1,19 @@
 import { NextResponse } from 'next/server';
 import { getRepository } from '@/lib/database/repository-factory';
+import type { NextRequest } from 'next/server';
 
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
+  const { id } = await params;
   
   try {
     const repository = getRepository();
-    const newKey = await repository.regenerateApiKey(id);
+    await repository.regenerateApiKey(id);
     const updatedKey = await repository.getApiKeyById(id);
     return NextResponse.json(updatedKey);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to regenerate API key' }, { status: 500 });
+    return NextResponse.json({ error: `Failed to regenerate API key: ${error}` }, { status: 500 });
   }
 } 

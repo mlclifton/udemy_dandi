@@ -71,11 +71,13 @@ export class SQLiteRepository implements DatabaseRepository {
 
   async getApiKeyById(id: string): Promise<ApiKey | null> {
     const db = await this.getDb();
-    return db.get('SELECT * FROM api_keys WHERE id = ?', [id]);
+    const result = await db.get<ApiKey>('SELECT * FROM api_keys WHERE id = ?', [id]);
+    return result ?? null;
   }
 
   async getApiKeyByKey(key: string): Promise<ApiKey | null> {
     const db = await this.getDb();
-    return db.get('SELECT * FROM api_keys WHERE key = ?', [key]);
+    const result = await db.get<ApiKey>('SELECT * FROM api_keys WHERE key = ?', [key]);
+    return result ?? null;
   }
-} 
+}

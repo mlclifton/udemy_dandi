@@ -7,7 +7,7 @@ export async function GET() {
     const keys = await repository.getAllApiKeys();
     return NextResponse.json(keys);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch API keys' }, { status: 500 });
+    return NextResponse.json({ error: `Failed to fetch API keys: ${error}` }, { status: 500 });
   }
 }
 
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     return NextResponse.json(newKey);
   } catch (error) {
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Failed to create API key: ${error}` },
       { status: 500 }
     );
   }

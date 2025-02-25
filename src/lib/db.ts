@@ -45,9 +45,10 @@ export async function createApiKey(name: string, usage: number): Promise<ApiKey>
       [id, name, key, now, now, usage, 1000]
     );
     
-    return { id, name, key, createdAt: now, lastUsed: now, usage, usage_limit: 1000 };
+    return { id, name, key, created_at: now, last_used: now, usage, usage_limit: 1000 };
   } catch (error) {
-    throw new DatabaseError(`Failed to create API key: ${error.message}`);
+    const message = error instanceof Error ? error.message : 'Unknown error occurred';
+    throw new DatabaseError(`Failed to create API key: ${message}`);
   }
 }
 
