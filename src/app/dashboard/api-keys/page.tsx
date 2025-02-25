@@ -4,10 +4,6 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
 
-interface ApiError {
-  message: string;
-}
-
 interface ApiKey {
   id: string;
   name: string;
@@ -109,7 +105,6 @@ export default function ApiKeysPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState('');
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -272,7 +267,6 @@ export default function ApiKeysPage() {
           onClose={() => {
             setIsModalOpen(false);
             setEditingKeyId(null);
-            setEditingName('');
           }}
           onSubmit={(name, usage) => {
             if (modalMode === 'create') {
@@ -350,10 +344,8 @@ export default function ApiKeysPage() {
                         </button>
                         <button
                           onClick={() => {
-                            const keyToEdit = apiKeys.find(k => k.id === key.id);
                             setModalMode('edit');
                             setEditingKeyId(key.id);
-                            setEditingName(keyToEdit?.name || '');
                             setIsModalOpen(true);
                           }}
                           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"

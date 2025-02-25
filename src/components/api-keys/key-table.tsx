@@ -35,7 +35,7 @@ export function KeyTable({ keys, onEdit, onDelete, onRegenerate }: KeyTableProps
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch (error) {
+    } catch {
       return 'Invalid Date';
     }
   };
