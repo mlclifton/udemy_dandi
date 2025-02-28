@@ -10,7 +10,10 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
+    "@langchain/community": "^0.3.33",
+    "@langchain/core": "^0.3.41",
     "@supabase/supabase-js": "^2.48.1",
+    "langchain": "^0.3.19",
     "next": "15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
