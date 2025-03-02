@@ -78,7 +78,7 @@ export async function analyzeReadmeContent(readmeContent: string): Promise<RepoS
     const parsedResult = JSON.parse(cleanedResult) as RepoSummary;
 
     return parsedResult;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error analyzing README content:", error);
     throw error;
   }
@@ -107,7 +107,7 @@ export async function summarizeGitHubRepo(repoUrl: string): Promise<RepoSummary>
     
     // Use the helper function to analyze the README content
     return await analyzeReadmeContent(readme);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error summarizing GitHub repo:", error);
     throw error;
   }

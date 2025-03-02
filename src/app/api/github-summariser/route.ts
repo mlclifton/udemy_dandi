@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       const summary = await analyzeReadmeContent(readme);
       return NextResponse.json(summary);
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('URL parsing error:', error);
       return NextResponse.json(
         { error: 'Invalid GitHub repository URL' },
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       );
     }
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('GitHub summariser error:', error);
     return NextResponse.json(
       { error: 'Internal Server Error' },
