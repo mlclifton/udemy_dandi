@@ -5,11 +5,7 @@ export async function POST(request: Request) {
   try {
     // Extract API key from headers and repo URL from body
     const apiKey = request.headers.get('x-api-key');
-    console.log('Received request headers:', Object.fromEntries(request.headers.entries()));
-    
     const body = await request.json();
-    console.log('Received request body:', body);
-    
     const { githubUrl } = body;
 
     // Validate inputs
@@ -69,7 +65,6 @@ export async function POST(request: Request) {
       }
 
       const [owner, repo] = pathParts;
-      console.log('Extracted owner/repo:', { owner, repo });
 
       // First verify the repository exists
       const repoCheckUrl = `https://api.github.com/repos/${owner}/${repo}`;
