@@ -1,13 +1,17 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { PromptTemplate } from "@langchain/core/prompts";
-import { StringOutputParser } from "@langchain/core/output_parsers";
+import { StructuredOutputParser } from "langchain/output_parsers";
+import { z } from "zod";
 import { RunnableSequence } from "@langchain/core/runnables";
 import removeMd from 'remove-markdown';
 
-interface RepoSummary {
-  summary: string;
-  coolFacts: string[];
-}
+// Define the schema for the output
+const repoSummarySchema = z.object({
+  summary: z.string().describe("A concise 2-3 sentence summary of what the repository is about"),
+  coolFacts: z.array(z.string()).describe("Up to 5 interesting or cool facts about the repository or its features"),
+});
+
+type RepoSummary = z.infer<typeof repoSummarySchema>;
 
 /**
  * Converts markdown content to plain text, removing formatting, images, and links
@@ -25,18 +29,12 @@ function cleanMarkdown(markdown: string): string {
 }
 
 const SUMMARY_TEMPLATE = `You are a helpful assistant that analyzes GitHub repository README files.
-Given the following README content, please provide:
-1. A concise summary of what the repository is about (2-3 sentences)
-2. Up to 5 interesting/cool facts about the repository or its features
+Given the following README content, please provide a summary and cool facts about the repository.
 
 README content:
 {readme}
 
-IMPORTANT: Respond with ONLY raw JSON, no markdown formatting, no code blocks, no backticks. The response should be a valid JSON object in this exact format:
-{{
-  "summary": "your summary here",
-  "coolFacts": ["fact 1", "fact 2", "fact 3"]
-}}`;
+{format_instructions}`;
 
 /**
  * Analyzes a README file content and returns a summary and cool facts using LangChain
@@ -51,6 +49,9 @@ export async function analyzeReadmeContent(readmeContent: string): Promise<RepoS
     // Clean the markdown content first
     const cleanedContent = cleanMarkdown(readmeContent);
 
+    // Initialize the parser with our schema
+    const parser = StructuredOutputParser.fromZodSchema(repoSummarySchema);
+
     // Initialize LangChain components with Gemini
     const model = new ChatGoogleGenerativeAI({
       modelName: "gemini-2.0-flash",
@@ -59,13 +60,19 @@ export async function analyzeReadmeContent(readmeContent: string): Promise<RepoS
       apiKey: apiKey,
     });
 
-    const prompt = PromptTemplate.fromTemplate(SUMMARY_TEMPLATE);
+    const prompt = new PromptTemplate({
+      template: SUMMARY_TEMPLATE,
+      inputVariables: ["readme"],
+      partialVariables: {
+        format_instructions: parser.getFormatInstructions(),
+      },
+    });
 
     // Create a processing chain
     const chain = RunnableSequence.from([
       prompt,
       model,
-      new StringOutputParser(),
+      parser,
     ]);
 
     // Run the chain with cleaned content
@@ -73,11 +80,7 @@ export async function analyzeReadmeContent(readmeContent: string): Promise<RepoS
       readme: cleanedContent,
     });
 
-    // Clean the response and parse JSON
-    const cleanedResult = result.trim().replace(/^```json\s*|\s*```$/g, '');
-    const parsedResult = JSON.parse(cleanedResult) as RepoSummary;
-
-    return parsedResult;
+    return result;
   } catch (error: unknown) {
     console.error("Error analyzing README content:", error);
     throw error;
