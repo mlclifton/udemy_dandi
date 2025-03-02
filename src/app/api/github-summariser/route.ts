@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getRepository } from '@/lib/database/repository-factory';
+import { analyzeReadmeContent } from '@/lib/github/github-summarizer';
 
 export async function POST(request: Request) {
   try {
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
       const readmeUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/README.md`;
       const readmeResponse = await fetch(readmeUrl);
 
+      let readme: string;
       if (!readmeResponse.ok) {
         // Try master branch if main branch doesn't exist
         const masterReadmeUrl = `https://raw.githubusercontent.com/${owner}/${repo}/master/README.md`;
@@ -93,12 +95,14 @@ export async function POST(request: Request) {
           );
         }
 
-        const readme = await masterReadmeResponse.text();
-        return NextResponse.json({ readme });
+        readme = await masterReadmeResponse.text();
+      } else {
+        readme = await readmeResponse.text();
       }
 
-      const readme = await readmeResponse.text();
-      return NextResponse.json({ readme });
+      // Analyze the README content using LangChain
+      const summary = await analyzeReadmeContent(readme);
+      return NextResponse.json(summary);
 
     } catch (error) {
       console.error('URL parsing error:', error);
@@ -116,3 +120,6 @@ export async function POST(request: Request) {
     );
   }
 } 
+
+
+
