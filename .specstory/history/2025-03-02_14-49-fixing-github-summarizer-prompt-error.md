@@ -365,7 +365,7 @@ Let me help you update the `.env.local` file with a placeholder for the new API 
 _****_
 
 ```diff
-- GOOGLE_API_KEY=AIzaSyCr-wagSHp5P7uxIBAykXv3NyYZok8JNLQ 
+- GOOGLE_API_KEY=<OLD your_valid_google_api_key_here>
 + # Get your API key from https://makersuite.google.com/app/apikey
 + GOOGLE_API_KEY=your_valid_google_api_key_here 
 ```
