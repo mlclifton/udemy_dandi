@@ -85,33 +85,4 @@ export async function analyzeReadmeContent(readmeContent: string): Promise<RepoS
     console.error("Error analyzing README content:", error);
     throw error;
   }
-}
-
-/**
- * Fetches and summarizes a GitHub repository's README file
- */
-export async function summarizeGitHubRepo(repoUrl: string): Promise<RepoSummary> {
-  try {
-    // Fetch README content from our API endpoint
-    const response = await fetch("/api/github-summariser", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ githubUrl: repoUrl }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch README: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const { readme } = data;
-    
-    // Use the helper function to analyze the README content
-    return await analyzeReadmeContent(readme);
-  } catch (error: unknown) {
-    console.error("Error summarizing GitHub repo:", error);
-    throw error;
-  }
 } 

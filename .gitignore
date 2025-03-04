@@ -39,6 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
 # the sqlite database
 database.sqlite
 
+# specstory saves chat history
+.specstory/**
